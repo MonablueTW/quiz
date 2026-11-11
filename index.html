@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>段考刷題本</title>
+<meta name="description" content="分科亂數練習、錯題本、詳解，可離線使用">
+<meta name="theme-color" content="#1f6f5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="刷題本">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#1d2321; --muted:#66706c; --line:#e2ded5;
+  --brand:#1f6f5c; --brand-ink:#ffffff; --brand-soft:#e3f1ec;
+  --ok:#1d7a3e; --ok-soft:#e2f4e7; --bad:#b3261e; --bad-soft:#fbe7e5; --warn-soft:#fff4d6; --warn-ink:#6b4e00;
+  --sel:#2b5fb4; --sel-soft:#e6eefb;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141816; --card:#1d2220; --ink:#e9ecea; --muted:#9aa4a0; --line:#2f3633;
+    --brand:#4fb394; --brand-ink:#0d1512; --brand-soft:#1f3a31;
+    --ok:#6bd08c; --ok-soft:#1c3324; --bad:#ff8a80; --bad-soft:#3a1f1d; --warn-soft:#3a3218; --warn-ink:#f3d98b;
+    --sel:#8db4f5; --sel-soft:#1e2b44;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#141816; --card:#1d2220; --ink:#e9ecea; --muted:#9aa4a0; --line:#2f3633;
+    --brand:#4fb394; --brand-ink:#0d1512; --brand-soft:#1f3a31;
+    --ok:#6bd08c; --ok-soft:#1c3324; --bad:#ff8a80; --bad-soft:#3a1f1d; --warn-soft:#3a3218; --warn-ink:#f3d98b;
+    --sel:#8db4f5; --sel-soft:#1e2b44;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:17px;line-height:1.65;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 120px}
+h1{font-size:24px;margin:8px 0 2px}
+h2{font-size:17px;margin:22px 0 8px;color:var(--muted);font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:16px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;margin-top:10px}
+.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.btn.ghost{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+.btn:disabled{opacity:.4}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:13px;color:var(--muted)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.link{background:none;border:0;color:var(--brand);font-size:16px;padding:6px 0;cursor:pointer}
+.bar{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--brand)}
+.tag{display:inline-block;font-size:13px;padding:1px 8px;border-radius:6px;background:var(--brand-soft);color:var(--brand);margin-right:6px}
+.qtext{white-space:pre-wrap;margin:8px 0}
+.ctx{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:15.5px;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0}
+td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
+td:first-child{white-space:nowrap}
+.tbl{overflow-x:auto}
+.qimg{display:block;max-width:100%;margin:8px auto;border-radius:8px;background:#fff}
+.opt{display:flex;gap:10px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;font-size:16.5px;line-height:1.55;cursor:pointer}
+.opt .k{flex:0 0 28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.opt.sel{border-color:var(--sel);background:var(--sel-soft)}
+.opt.sel .k{background:var(--sel);color:#fff;border-color:var(--sel)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.right .k{background:var(--ok);color:#fff;border-color:var(--ok)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .k{background:var(--bad);color:#fff;border-color:var(--bad)}
+.verdict{font-size:20px;font-weight:700;margin:4px 0}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.note{background:var(--warn-soft);color:var(--warn-ink);border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.exp{font-size:16px}
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:8px 16px calc(10px + env(safe-area-inset-bottom))}
+.foot .in{max-width:640px;margin:0 auto}
+.foot .btn{margin:0}
+.hint{font-size:14px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:12px}
+.wlist .item{border-top:1px solid var(--line);padding:10px 0;font-size:15px}
+.wlist .item:first-child{border-top:0}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="foot hidden" id="foot"><div class="in"><button class="btn primary" id="footBtn"></button></div></div>
+
+<!-- 題庫：新增科目時，在這裡加一行 script，並把同一個檔名加進 sw.js 的 FILES -->
+<script src="data/history-115-1-2.js"></script>
+
+<script>
+(function(){
+"use strict";
+var BANK = window.QUIZ_BANK || [];
+var LETTERS = "ABCDE";
+var app = document.getElementById("app");
+var foot = document.getElementById("foot");
+var footBtn = document.getElementById("footBtn");
+
+// ---------- storage (safe) ----------
+var STORE_KEY = "quiz-progress-v1";
+function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; } }
+var DB = load();
+DB.q = DB.q || {};      // per question: {seen, correct, wrong, streak, inBook}
+DB.prefs = DB.prefs || {};
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }catch(e){} }
+
+// ---------- build question list ----------
+var ALL = [];
+BANK.forEach(function(set){
+  set.questions.forEach(function(q){
+    q.subject = set.subject; q.set = set.set;
+    q.id = set.subject + "|" + set.set + "|" + q.n;
+    q.type = q.type || (q.ans.length > 1 ? "multi" : "single");
+    ALL.push(q);
+  });
+});
+function subjects(){ var s=[]; ALL.forEach(function(q){ if(s.indexOf(q.subject)<0) s.push(q.subject); }); return s; }
+function unitsOf(subj){ var s=[];
+  BANK.forEach(function(set){ if(set.subject===subj && set.units) set.units.forEach(function(u){ if(s.indexOf(u)<0) s.push(u); }); });
+  ALL.forEach(function(q){ if(q.subject===subj && q.unit && s.indexOf(q.unit)<0) s.push(q.unit); }); return s; }
+function rec(q){ return DB.q[q.id] || (DB.q[q.id] = {seen:0, correct:0, wrong:0, streak:0, inBook:false}); }
+
+var prefs = {
+  subject: DB.prefs.subject && subjects().indexOf(DB.prefs.subject)>=0 ? DB.prefs.subject : subjects()[0],
+  units: DB.prefs.units || [],     // empty = all
+  type: DB.prefs.type || "all",
+  count: DB.prefs.count || 10
+};
+function savePrefs(){ DB.prefs = prefs; save(); }
+
+function pool(){
+  return ALL.filter(function(q){
+    if(q.subject !== prefs.subject) return false;
+    if(prefs.units.length && prefs.units.indexOf(q.unit) < 0) return false;
+    if(prefs.type !== "all" && q.type !== prefs.type) return false;
+    return true;
+  });
+}
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+// 亂數抽題：沒做過的、常錯的題目比較容易被抽到
+function pickWeighted(list, n){
+  var items = list.map(function(q){
+    var r = DB.q[q.id]; var w = 1;
+    if(!r || !r.seen) w = 2;
+    else { w = 1 + r.wrong*1.5 - Math.min(r.streak,3)*0.25; if(r.inBook) w += 2; }
+    w = Math.max(w, 0.3);
+    return {q:q, key: Math.pow(Math.random(), 1/w)};
+  });
+  items.sort(function(a,b){ return b.key - a.key; });
+  return items.slice(0, n).map(function(x){ return x.q; });
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function setFoot(label, fn, disabled){
+  if(!label){ foot.classList.add("hidden"); return; }
+  foot.classList.remove("hidden"); footBtn.textContent = label; footBtn.onclick = fn; footBtn.disabled = !!disabled;
+}
+
+// ---------- HOME ----------
+function home(){
+  setFoot(null);
+  var p = pool();
+  var subjAll = ALL.filter(function(q){ return q.subject===prefs.subject; });
+  var book = subjAll.filter(function(q){ return DB.q[q.id] && DB.q[q.id].inBook; });
+  var seen=0, cor=0, tot=0;
+  subjAll.forEach(function(q){ var r=DB.q[q.id]; if(r && r.seen){ seen++; cor+=r.correct; tot+=r.correct+r.wrong; } });
+  var rate = tot ? Math.round(cor*100/tot)+"%" : "—";
+  var standalone = window.navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+
+  var h = "";
+  h += '<h1>段考刷題本</h1><p class="sub">分科亂數練習・錯題本・詳解・可離線</p>';
+  if(!standalone){
+    h += '<div class="hint">📱 iPhone 用法：用 Safari 打開本頁 → 點下方「分享」按鈕 → 選「加入主畫面」。之後從桌面圖示打開，沒有網路也能練習。</div>';
+  }
+  h += '<h2>科目</h2><div class="chips">';
+  subjects().forEach(function(s){ h += '<button class="chip" data-subj="'+esc(s)+'" aria-pressed="'+(s===prefs.subject)+'">'+esc(s)+'</button>'; });
+  h += '</div>';
+
+  h += '<div class="card stats">'
+     + '<div class="stat"><b>'+seen+'/'+subjAll.length+'</b><span>做過的題目</span></div>'
+     + '<div class="stat"><b>'+rate+'</b><span>答對率</span></div>'
+     + '<div class="stat"><b>'+book.length+'</b><span>錯題本</span></div></div>';
+
+  var units = unitsOf(prefs.subject);
+  if(units.length > 1){
+    h += '<h2>單元（可複選，不選＝全部）</h2><div class="chips">';
+    units.forEach(function(u){
+      var c = subjAll.filter(function(q){return q.unit===u;}).length;
+      h += '<button class="chip" data-unit="'+esc(u)+'" aria-pressed="'+(prefs.units.indexOf(u)>=0)+'">'+esc(u)+' '+c+'</button>';
+    });
+    h += '</div>';
+  }
+  h += '<h2>題型</h2><div class="chips">';
+  [["all","全部"],["single","單選"],["multi","多選"]].forEach(function(t){
+    h += '<button class="chip" data-type="'+t[0]+'" aria-pressed="'+(prefs.type===t[0])+'">'+t[1]+'</button>';
+  });
+  h += '</div><h2>每回題數</h2><div class="chips">';
+  [10,20,30,0].forEach(function(n){
+    h += '<button class="chip" data-count="'+n+'" aria-pressed="'+(prefs.count===n)+'">'+(n||"全部")+'</button>';
+  });
+  h += '</div>';
+  h += '<p class="sub" style="margin-top:14px">符合條件：'+p.length+' 題。答錯的題目會自動進錯題本，在「錯題複習」中連續答對 2 次才會移出。</p>';
+  h += '<button class="btn ghost" id="goBook"'+(book.length?'':' disabled')+'>錯題複習（'+book.length+' 題）</button>';
+  h += '<button class="btn ghost" id="goList"'+(book.length?'':' disabled')+'>看錯題本清單</button>';
+  h += '<p style="text-align:center;margin-top:24px"><button class="link" id="reset" style="color:var(--muted);font-size:14px">清除「'+esc(prefs.subject)+'」的作答紀錄</button></p>';
+  app.innerHTML = h;
+  setFoot(p.length ? "開始亂數練習" : "沒有符合條件的題目", function(){
+    var n = prefs.count || p.length;
+    start(pickWeighted(p, Math.min(n, p.length)), "practice");
+  }, !p.length);
+
+  app.querySelectorAll("[data-subj]").forEach(function(b){ b.onclick=function(){ prefs.subject=b.dataset.subj; prefs.units=[]; savePrefs(); home(); }; });
+  app.querySelectorAll("[data-unit]").forEach(function(b){ b.onclick=function(){
+    var u=b.dataset.unit, i=prefs.units.indexOf(u); if(i>=0) prefs.units.splice(i,1); else prefs.units.push(u); savePrefs(); home(); }; });
+  app.querySelectorAll("[data-type]").forEach(function(b){ b.onclick=function(){ prefs.type=b.dataset.type; savePrefs(); home(); }; });
+  app.querySelectorAll("[data-count]").forEach(function(b){ b.onclick=function(){ prefs.count=+b.dataset.count; savePrefs(); home(); }; });
+  document.getElementById("goBook").onclick=function(){ start(shuffle(book), "review"); };
+  document.getElementById("goList").onclick=function(){ bookList(book); };
+  document.getElementById("reset").onclick=function(){
+    if(!confirm("確定清除「"+prefs.subject+"」的作答紀錄與錯題本？")) return;
+    subjAll.forEach(function(q){ delete DB.q[q.id]; }); save(); home();
+  };
+  window.scrollTo(0,0);
+}
+
+// ---------- QUIZ ----------
+var S = null; // session
+function start(list, mode){ S = {list:list, mode:mode, i:0, right:0, wrongs:[]}; show(); }
+
+function qBody(q){
+  var h = '';
+  if(q.group) h += '<div class="ctx">'+esc(q.group)+'</div>';
+  if(q.q0) h += '<div class="qtext">'+esc(q.q0)+'</div>';
+  if(q.q2){
+    h += '<div class="qtext">'+esc(q.q)+'</div>' + tbl(q.table) + '<div class="qtext">'+esc(q.q2)+'</div>';
+  } else {
+    if(q.table) h += tbl(q.table);
+    if(q.img) h += '<img class="qimg" src="'+q.img+'" alt="題目附圖">';
+    h += '<div class="qtext">'+esc(q.q)+'</div>';
+  }
+  return h;
+}
+function tbl(t){
+  if(!t) return '';
+  return '<div class="tbl"><table>'+t.map(function(r){ return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>'; }).join('')+'</table></div>';
+}
+
+function show(){
+  var q = S.list[S.i];
+  S.sel = []; S.done = false;
+  var h = '<div class="top"><button class="link" id="quit">← 回首頁</button><span class="sub">'+(S.mode==="review"?"錯題複習　":"")+(S.i+1)+' / '+S.list.length+'</span></div>';
+  h += '<div class="bar"><i style="width:'+(S.i*100/S.list.length)+'%"></i></div>';
+  h += '<div class="card">';
+  h += '<span class="tag">'+esc(q.subject)+'</span><span class="tag">'+esc(q.unit||"")+'</span><span class="tag">'+(q.type==="multi"?"多選":"單選")+'</span><span class="sub">原第 '+q.n+' 題</span>';
+  h += qBody(q);
+  h += '<div id="opts">';
+  q.opts.forEach(function(o,k){
+    h += '<button class="opt" data-k="'+LETTERS[k]+'"><span class="k">'+LETTERS[k]+'</span><span>'+esc(o)+'</span></button>';
+  });
+  h += '</div>';
+  if(q.type==="multi") h += '<p class="sub">多選題：可選多個，全部選對才算對。</p>';
+  h += '<div id="fb"></div></div>';
+  app.innerHTML = h;
+  window.scrollTo(0,0);
+  document.getElementById("quit").onclick = function(){ if(S.i===0 || confirm("離開這回練習？已作答的紀錄會保留。")) home(); };
+  app.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){
+      if(S.done) return;
+      var k = b.dataset.k;
+      if(q.type==="multi"){ var i=S.sel.indexOf(k); if(i>=0) S.sel.splice(i,1); else S.sel.push(k); }
+      else S.sel = [k];
+      app.querySelectorAll(".opt").forEach(function(x){ x.classList.toggle("sel", S.sel.indexOf(x.dataset.k)>=0); });
+      setFoot("確認答案", check, !S.sel.length);
+    };
+  });
+  setFoot("確認答案", check, true);
+}
+
+function check(){
+  var q = S.list[S.i];
+  S.done = true;
+  var mine = S.sel.slice().sort().join("");
+  var ok = mine === q.ans;
+  var r = rec(q);
+  r.seen++;
+  if(ok){ r.correct++; r.streak++; S.right++;
+    if(r.inBook && S.mode==="review" && r.streak>=2) r.inBook=false;
+  } else { r.wrong++; r.streak=0; r.inBook=true; S.wrongs.push(q); }
+  save();
+  app.querySelectorAll(".opt").forEach(function(x){
+    var k=x.dataset.k; x.classList.remove("sel");
+    if(q.ans.indexOf(k)>=0) x.classList.add("right");
+    else if(S.sel.indexOf(k)>=0) x.classList.add("wrong");
+  });
+  var h = '<div class="verdict '+(ok?'ok':'bad')+'">'+(ok?'✓ 答對了':'✗ 答錯了')+'</div>';
+  h += '<div>正確答案：<b>'+q.ans.split("").join("、")+'</b>'+(ok?'':'　你的答案：'+(mine.split("").join("、")||"—"))+'</div>';
+  if(q.note) h += '<div class="note">'+esc(q.note)+'</div>';
+  if(q.exp) h += '<p class="exp"><b>詳解</b>　'+esc(q.exp)+'</p>';
+  if(S.mode==="review" && ok && r.inBook) h += '<p class="sub">再答對 1 次就會移出錯題本。</p>';
+  if(S.mode==="review" && ok && !r.inBook) h += '<p class="sub">已移出錯題本 👍</p>';
+  document.getElementById("fb").innerHTML = h;
+  setFoot(S.i+1<S.list.length ? "下一題" : "看結果", next);
+}
+function next(){ S.i++; if(S.i<S.list.length) show(); else result(); }
+
+function result(){
+  var n=S.list.length, pct=Math.round(S.right*100/n);
+  var h = '<h1>這回成績</h1>';
+  h += '<div class="card stats"><div class="stat"><b>'+S.right+'/'+n+'</b><span>答對</span></div><div class="stat"><b>'+pct+'%</b><span>答對率</span></div><div class="stat"><b>'+S.wrongs.length+'</b><span>答錯</span></div></div>';
+  if(S.wrongs.length){
+    h += '<h2>這回答錯的題目</h2><div class="card wlist">';
+    S.wrongs.forEach(function(q){ h += '<div class="item"><b>第 '+q.n+' 題</b>（答案 '+q.ans+'）'+esc((q.q.length>40?q.q.slice(0,40)+"…":q.q))+'</div>'; });
+    h += '</div><button class="btn ghost" id="redo">馬上重做這幾題</button>';
+  } else h += '<p>全對，太強了！🎉</p>';
+  app.innerHTML = h; window.scrollTo(0,0);
+  var w = S.wrongs.slice();
+  if(w.length) document.getElementById("redo").onclick=function(){ start(shuffle(w), "review"); };
+  setFoot("回首頁", home);
+}
+
+function bookList(book){
+  var h = '<div class="top"><button class="link" id="back">← 回首頁</button></div><h1>錯題本</h1><p class="sub">共 '+book.length+' 題，依答錯次數排序</p><div class="card wlist">';
+  book.slice().sort(function(a,b){ return DB.q[b.id].wrong - DB.q[a.id].wrong; }).forEach(function(q){
+    var r=DB.q[q.id];
+    h += '<div class="item"><b>第 '+q.n+' 題</b>　<span class="sub">錯 '+r.wrong+' 次・答案 '+q.ans+'</span><br>'+esc(q.q.length>60?q.q.slice(0,60)+"…":q.q)+'</div>';
+  });
+  h += '</div>';
+  app.innerHTML = h; window.scrollTo(0,0);
+  document.getElementById("back").onclick = home;
+  setFoot("開始錯題複習", function(){ start(shuffle(book), "review"); });
+}
+
+home();
+
+if("serviceWorker" in navigator && location.protocol !== "file:"){
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
+})();
+</script>
+</body>
+</html>
