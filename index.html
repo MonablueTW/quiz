@@ -82,6 +82,11 @@ td:first-child{white-space:nowrap}
 .wlist .item{border-top:1px solid var(--line);padding:10px 0;font-size:15px}
 .wlist .item:first-child{border-top:0}
 .hidden{display:none!important}
+.showBtn{display:none}
+.hideAns .showBtn{display:block}
+.hideAns .ansPart{display:none}
+.hideAns .opt.right{border-color:var(--line);background:var(--card)}
+.hideAns .opt.right .k{background:transparent;color:var(--ink);border-color:var(--line)}
 </style>
 </head>
 <body>
@@ -206,7 +211,8 @@ function home(){
   });
   h += '</div>';
   h += '<p class="sub" style="margin-top:14px">符合條件：'+p.length+' 題。答錯的題目會自動進錯題本，在「錯題複習」中連續答對 2 次才會移出。</p>';
-  h += '<button class="btn ghost" id="goStudy"'+(p.length?'':' disabled')+'>📖 先行複習（看題目＋答案＋詳解）</button>';
+  h += '<button class="btn ghost" id="goAll"'+(p.length?'':' disabled')+'>📚 全部題目一覽（題目＋答案＋解析）</button>';
+  h += '<button class="btn ghost" id="goStudy"'+(p.length?'':' disabled')+'>📖 一題一題複習</button>';
   h += '<button class="btn ghost" id="goBook"'+(book.length?'':' disabled')+'>錯題複習（'+book.length+' 題）</button>';
   h += '<button class="btn ghost" id="goList"'+(book.length?'':' disabled')+'>看錯題本清單</button>';
   h += '<p style="text-align:center;margin-top:24px"><button class="link" id="reset" style="color:var(--muted);font-size:14px">清除「'+esc(prefs.subject)+'」的作答紀錄</button></p>';
@@ -221,6 +227,7 @@ function home(){
     var u=b.dataset.unit, i=prefs.units.indexOf(u); if(i>=0) prefs.units.splice(i,1); else prefs.units.push(u); savePrefs(); home(); }; });
   app.querySelectorAll("[data-type]").forEach(function(b){ b.onclick=function(){ prefs.type=b.dataset.type; savePrefs(); home(); }; });
   app.querySelectorAll("[data-count]").forEach(function(b){ b.onclick=function(){ prefs.count=+b.dataset.count; savePrefs(); home(); }; });
+  document.getElementById("goAll").onclick=function(){ overview(p); };
   document.getElementById("goStudy").onclick=function(){ studyStart(p); };
   document.getElementById("goBook").onclick=function(){ start(shuffle(book), "review"); };
   document.getElementById("goList").onclick=function(){ bookList(book); };
@@ -385,6 +392,62 @@ function reveal(){
   document.getElementById("ansBox").innerHTML = h;
   if(T.i+1 < T.list.length) setFoot("下一題", function(){ T.i++; study(); });
   else setFoot("複習完了，回首頁", function(){ DB.prefs.studyPos[studyKey()] = null; save(); home(); });
+}
+
+// ---------- OVERVIEW (全部題目一覽) ----------
+function overview(list){
+  setFoot(null);
+  var units = unitsOf(prefs.subject);
+  list = list.slice().sort(function(a,b){
+    var ua = units.indexOf(a.unit), ub = units.indexOf(b.unit);
+    if(ua!==ub) return ua-ub;
+    return a.set===b.set ? a.n-b.n : (a.set<b.set?-1:1);
+  });
+  var hide = !!DB.prefs.ovHide;
+  var used = units.filter(function(u){ return list.some(function(q){ return q.unit===u; }); });
+  var h = '<div class="top"><button class="link" id="quit">← 回首頁</button><span class="sub">'+esc(prefs.subject)+'・共 '+list.length+' 題</span></div>';
+  h += '<h1>全部題目一覽</h1>';
+  h += '<div class="chips" style="margin:8px 0"><button class="chip" id="hideTg" aria-pressed="'+hide+'">🙈 先遮住答案</button></div>';
+  if(used.length>1){
+    h += '<p class="sub" style="margin:4px 0">跳到單元：</p><div class="chips">';
+    used.forEach(function(u,k){ h += '<button class="chip" data-jump="u'+k+'">'+esc(u)+'</button>'; });
+    h += '</div>';
+  }
+  var cur = null;
+  list.forEach(function(q, idx){
+    if(q.unit!==cur){ cur=q.unit; h += '<h2 id="u'+used.indexOf(cur)+'" style="scroll-margin-top:12px">'+esc(cur||"")+'</h2>'; }
+    var r = DB.q[q.id], inBook = !!(r && r.inBook);
+    h += '<div class="card ov'+(hide?' hideAns':'')+'" data-i="'+idx+'">';
+    h += '<div class="top"><span><span class="tag">'+(q.type==="multi"?"多選":"單選")+'</span><span class="sub">原第 '+q.n+' 題</span></span>'
+       + '<button class="link bk" style="font-size:14px">'+(inBook?'★ 錯題本':'☆ 加入錯題本')+'</button></div>';
+    h += qBody(q);
+    q.opts.forEach(function(o,k){
+      var L = LETTERS[k];
+      h += '<div class="opt'+(q.ans.indexOf(L)>=0?' right':'')+'" style="cursor:default"><span class="k">'+L+'</span><span>'+esc(o)+'</span></div>';
+    });
+    h += '<button class="btn ghost showBtn" style="padding:10px;font-size:16px">看答案</button>';
+    h += '<div class="ansPart"><div style="margin-top:6px">正確答案：<b>'+q.ans.split("").join("、")+'</b></div>';
+    if(q.note) h += '<div class="note">'+esc(q.note)+'</div>';
+    if(q.exp) h += '<p class="exp"><b>詳解</b>　'+esc(q.exp)+'</p>';
+    h += '</div></div>';
+  });
+  app.innerHTML = h; window.scrollTo(0,0);
+  setFoot("⬆ 回到頂端", function(){ window.scrollTo(0,0); });
+  document.getElementById("quit").onclick = home;
+  document.getElementById("hideTg").onclick = function(){
+    DB.prefs.ovHide = !hide; save(); hide = !hide;
+    this.setAttribute("aria-pressed", hide);
+    app.querySelectorAll(".ov").forEach(function(c){ c.classList.toggle("hideAns", hide); });
+  };
+  app.querySelectorAll("[data-jump]").forEach(function(b){ b.onclick=function(){
+    var el=document.getElementById(b.dataset.jump); if(el) el.scrollIntoView({behavior:"smooth"}); }; });
+  app.querySelectorAll(".ov").forEach(function(c){
+    var q = list[+c.dataset.i];
+    c.querySelector(".showBtn").onclick = function(){ c.classList.remove("hideAns"); };
+    var bk = c.querySelector(".bk");
+    bk.onclick = function(){ var rr=rec(q); rr.inBook=!rr.inBook; if(rr.inBook) rr.streak=0; save();
+      bk.textContent = rr.inBook ? '★ 錯題本' : '☆ 加入錯題本'; };
+  });
 }
 
 home();
