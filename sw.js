@@ -1,5 +1,5 @@
 // 離線快取。更新題庫或新增科目時：把檔名加進 FILES，並把 VERSION 數字 +1
-var VERSION = "v1";
+var VERSION = "v2";
 var FILES = [
   "./",
   "index.html",
@@ -7,6 +7,7 @@ var FILES = [
   "icon-180.png",
   "icon-512.png",
   "data/history-115-1-2.js",
+  "data/chinese-115-1-2.js",
   "img/q15.png",
   "img/q51.png"
 ];
