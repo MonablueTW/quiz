@@ -47,7 +47,7 @@ h2{font-size:17px;margin:22px 0 8px;color:var(--muted);font-weight:600}
 .btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;margin-top:10px}
 .btn.primary{background:var(--brand);color:var(--brand-ink)}
 .btn.ghost{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
-.btn:disabled{opacity:.4}
+.btn:disabled,.chip:disabled{opacity:.4}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .stat b{display:block;font-size:22px}
 .stat span{font-size:13px;color:var(--muted)}
@@ -206,6 +206,7 @@ function home(){
   });
   h += '</div>';
   h += '<p class="sub" style="margin-top:14px">符合條件：'+p.length+' 題。答錯的題目會自動進錯題本，在「錯題複習」中連續答對 2 次才會移出。</p>';
+  h += '<button class="btn ghost" id="goStudy"'+(p.length?'':' disabled')+'>📖 先行複習（看題目＋答案＋詳解）</button>';
   h += '<button class="btn ghost" id="goBook"'+(book.length?'':' disabled')+'>錯題複習（'+book.length+' 題）</button>';
   h += '<button class="btn ghost" id="goList"'+(book.length?'':' disabled')+'>看錯題本清單</button>';
   h += '<p style="text-align:center;margin-top:24px"><button class="link" id="reset" style="color:var(--muted);font-size:14px">清除「'+esc(prefs.subject)+'」的作答紀錄</button></p>';
@@ -220,6 +221,7 @@ function home(){
     var u=b.dataset.unit, i=prefs.units.indexOf(u); if(i>=0) prefs.units.splice(i,1); else prefs.units.push(u); savePrefs(); home(); }; });
   app.querySelectorAll("[data-type]").forEach(function(b){ b.onclick=function(){ prefs.type=b.dataset.type; savePrefs(); home(); }; });
   app.querySelectorAll("[data-count]").forEach(function(b){ b.onclick=function(){ prefs.count=+b.dataset.count; savePrefs(); home(); }; });
+  document.getElementById("goStudy").onclick=function(){ studyStart(p); };
   document.getElementById("goBook").onclick=function(){ start(shuffle(book), "review"); };
   document.getElementById("goList").onclick=function(){ bookList(book); };
   document.getElementById("reset").onclick=function(){
@@ -334,6 +336,55 @@ function bookList(book){
   app.innerHTML = h; window.scrollTo(0,0);
   document.getElementById("back").onclick = home;
   setFoot("開始錯題複習", function(){ start(shuffle(book), "review"); });
+}
+
+// ---------- STUDY (先行複習) ----------
+var T = null;
+function studyKey(){ return prefs.subject+"|"+prefs.units.slice().sort().join(",")+"|"+prefs.type; }
+function studyStart(list){
+  list = list.slice().sort(function(a,b){ return a.set===b.set ? a.n-b.n : (a.set<b.set?-1:1); });
+  var pos = (DB.prefs.studyPos||{})[studyKey()], i = 0;
+  list.forEach(function(q,k){ if(q.id===pos) i=k; });
+  T = {list:list, i:i, hide: !!DB.prefs.studyHide};
+  study();
+}
+function study(){
+  var q = T.list[T.i], r = DB.q[q.id], inBook = !!(r && r.inBook);
+  DB.prefs.studyPos = DB.prefs.studyPos || {}; DB.prefs.studyPos[studyKey()] = q.id; save();
+  T.shown = !T.hide;
+  var h = '<div class="top"><button class="link" id="quit">← 回首頁</button><span class="sub">先行複習　'+(T.i+1)+' / '+T.list.length+'</span></div>';
+  h += '<div class="bar"><i style="width:'+((T.i+1)*100/T.list.length)+'%"></i></div>';
+  h += '<div class="chips" style="margin:8px 0"><button class="chip" id="hideTg" aria-pressed="'+T.hide+'">🙈 先遮住答案</button>'
+     + '<button class="chip" id="bookTg" aria-pressed="'+inBook+'">'+(inBook?'★ 已在錯題本':'☆ 不熟，加入錯題本')+'</button></div>';
+  h += '<div class="card">';
+  h += '<span class="tag">'+esc(q.unit||"")+'</span><span class="tag">'+(q.type==="multi"?"多選":"單選")+'</span><span class="sub">原第 '+q.n+' 題</span>';
+  h += qBody(q);
+  q.opts.forEach(function(o,k){
+    h += '<div class="opt" data-k="'+LETTERS[k]+'" style="cursor:default"><span class="k">'+LETTERS[k]+'</span><span>'+esc(o)+'</span></div>';
+  });
+  h += '<div id="ansBox"></div></div>';
+  h += '<div class="chips" style="justify-content:space-between;margin-top:4px"><button class="chip" id="prev"'+(T.i?'':' disabled')+'>← 上一題</button>'
+     + '<button class="chip" id="toPractice">用這些題目練習 →</button></div>';
+  app.innerHTML = h; window.scrollTo(0,0);
+  if(T.shown) reveal();
+  else setFoot("看答案", function(){ T.shown=true; reveal(); });
+  document.getElementById("quit").onclick = home;
+  document.getElementById("prev").onclick = function(){ if(T.i){ T.i--; study(); } };
+  document.getElementById("hideTg").onclick = function(){ T.hide=!T.hide; DB.prefs.studyHide=T.hide; save(); study(); };
+  document.getElementById("bookTg").onclick = function(){
+    var rr = rec(q); rr.inBook = !rr.inBook; if(rr.inBook) rr.streak = 0; save(); study();
+  };
+  document.getElementById("toPractice").onclick = function(){ start(shuffle(T.list), "practice"); };
+}
+function reveal(){
+  var q = T.list[T.i];
+  app.querySelectorAll(".opt").forEach(function(x){ if(q.ans.indexOf(x.dataset.k)>=0) x.classList.add("right"); });
+  var h = '<div style="margin-top:6px">正確答案：<b>'+q.ans.split("").join("、")+'</b></div>';
+  if(q.note) h += '<div class="note">'+esc(q.note)+'</div>';
+  if(q.exp) h += '<p class="exp"><b>詳解</b>　'+esc(q.exp)+'</p>';
+  document.getElementById("ansBox").innerHTML = h;
+  if(T.i+1 < T.list.length) setFoot("下一題", function(){ T.i++; study(); });
+  else setFoot("複習完了，回首頁", function(){ DB.prefs.studyPos[studyKey()] = null; save(); home(); });
 }
 
 home();
