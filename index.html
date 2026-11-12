@@ -82,6 +82,7 @@ td:first-child{white-space:nowrap}
 .wlist .item{border-top:1px solid var(--line);padding:10px 0;font-size:15px}
 .wlist .item:first-child{border-top:0}
 .hidden{display:none!important}
+.stick{position:-webkit-sticky;position:sticky;top:0;z-index:5;background:var(--bg);margin:0 -16px;padding:8px 16px;border-bottom:1px solid var(--line)}
 .showBtn{display:none}
 .hideAns .showBtn{display:block}
 .hideAns .ansPart{display:none}
@@ -405,9 +406,9 @@ function overview(list){
   });
   var hide = !!DB.prefs.ovHide;
   var used = units.filter(function(u){ return list.some(function(q){ return q.unit===u; }); });
-  var h = '<div class="top"><button class="link" id="quit">← 回首頁</button><span class="sub">'+esc(prefs.subject)+'・共 '+list.length+' 題</span></div>';
-  h += '<h1>全部題目一覽</h1>';
-  h += '<div class="chips" style="margin:8px 0"><button class="chip" id="hideTg" aria-pressed="'+hide+'">🙈 先遮住答案</button></div>';
+  var h = '<div class="stick top"><button class="link" id="quit">← 回首頁</button>'
+     + '<button class="chip" id="hideTg" aria-pressed="'+hide+'">'+(hide?'🙈 答案已遮住':'👀 答案顯示中')+'</button></div>';
+  h += '<h1>全部題目一覽</h1><p class="sub">'+esc(prefs.subject)+'・共 '+list.length+' 題・上方按鈕可隨時切換遮住／顯示答案</p>';
   if(used.length>1){
     h += '<p class="sub" style="margin:4px 0">跳到單元：</p><div class="chips">';
     used.forEach(function(u,k){ h += '<button class="chip" data-jump="u'+k+'">'+esc(u)+'</button>'; });
@@ -437,6 +438,7 @@ function overview(list){
   document.getElementById("hideTg").onclick = function(){
     DB.prefs.ovHide = !hide; save(); hide = !hide;
     this.setAttribute("aria-pressed", hide);
+    this.textContent = hide ? '🙈 答案已遮住' : '👀 答案顯示中';
     app.querySelectorAll(".ov").forEach(function(c){ c.classList.toggle("hideAns", hide); });
   };
   app.querySelectorAll("[data-jump]").forEach(function(b){ b.onclick=function(){
